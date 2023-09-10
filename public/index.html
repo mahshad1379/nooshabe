@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Nooshabe Distribution Game Simulator">
+  <meta name="author" content="Miron Vranjes">
+
+  <title>بازی نوشابه</title>
+
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7"
+    crossorigin="anonymous">
+
+  <!-- Optional theme -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r"
+    crossorigin="anonymous">
+
+  <link rel="stylesheet" href="animate.css">
+
+  <link rel="stylesheet" href="style.css">
+
+  <!-- jQuery library -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+  <!-- Latest compiled and minified JavaScript -->
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
+    crossorigin="anonymous"></script>
+
+  <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
+  <script src="countUp.js"></script>
+  <script src="validator.js"></script>
+
+  <!-- The client source -->
+  <script src="client.js"></script>
+
+  <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+  <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body dir="rtl">
+
+  <div class="modal fade" id="nextTurn" tabindex="-1" role="dialog">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">خوش آمدید به  <span class="weekText">هفته 1</span>!</h4>
+        </div>
+        <div class="modal-body">
+          <p>شما در <span class="weekText">هفته 1</span> از بازی هستید. در هر مرحله گام های زیر را دنبال کنید:</p>
+          <ol>
+            <li>تایید محموله ورودی <span class="upstreamName">عمده فروش</span>.</li>
+            <li>برآورده کردن درخواست <span class="downstreamName">مشتری</span>.</li>
+            <li>تعیین سفارش جدید  <span class="upstreamName">عمده فروش</span>.</li>
+          </ol>
+          <p>موفق باشید!</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-dismiss="modal">فهمیدم!</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="myModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form role="form" data-toggle="validator">
+          <div class="modal-header">
+            <h4 class="modal-title">نام کاربری خود را وارد کنید</h4>
+          </div>
+          <div class="modal-body">
+            <p>برای شروع لطفا یک نام کاربری با حروف انگلیسی انتخاب نمایید.</p>
+            <div class="alert alert-danger collapse" role="alert" id="errorDialog">
+              <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+              <span class="sr-only">خطا:</span> <span id="errorText">این نام کاربری قبلا انتخاب شده، لطفا نام دیگری انتخاب کنید.</span>
+            </div>
+            <div class="form-group has-feedback">
+              <label for="formUsername" class="control-label">نام کاربری</label>
+              <div class="input-group">
+                <span class="input-group-addon">
+        <span class="glyphicon glyphicon-user" aria-hidden="true"></span>
+                </span>
+                <input type="text" pattern="^[_A-z0-9]{3,}$" maxlength="15" class="form-control" id="formUsername" placeholder="نام کاربری"
+                  required>
+              </div>
+              <span class="glyphicon form-control-feedback" aria-hidden="true"></span>
+              <div class="help-block with-errors">حداقل 3 کاراکتر</div>
+            </div>
+          </div>
+          <div class="modal-footer form-group">
+            <button type="submit" class="btn btn-primary" id="btnLogin">شروع</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <h2>بازی نوشابه</h2>
+
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <div class="navbar-brand" id="role">انتظار...</div>
+        </div>
+        <div class="collapse navbar-collapse">
+          <p class="navbar-text navbar-right" id="username"></p>
+        </div>
+      </div>
+    </nav>
+
+    <p id="participants">منتظر شروع بازی</p>
+
+    <div class="alert alert-warning collapse" role="alert" id="waitingOnUsers">
+      <span>اطلاعایه ها</span>
+      <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+      <span id="waitingText">.درخواست شما ثبت شد! در انتطار سایر بازیکنان</span>
+    </div>
+
+    <div class="alert alert-warning collapse" role="alert" id="acceptDelivery">
+      <p style="margin-bottom: 5px;">اطلاعیه</p>
+      <span class="glyphicon glyphicon-inbox" aria-hidden="true"></span>
+      <span id="deliveryText">!سفارش شما رسید! تایید کنید تا ادامه دهیم</span>
+      <p class="pull-right">
+        <a class="btn btn-warning" id="btnDeliver" href="#">تایید ارسال</a>
+      </p>
+    </div>
+
+    <div class="alert alert-success collapse" role="alert" id="fulfillOrder">
+      <p style="margin-bottom: 5px;">اطلاعیه</p>
+      <span class="glyphicon glyphicon-road" aria-hidden="true"></span>
+      <span id="fulfillText">!مشتری در انتظار برآورده شدن سفارش خود است، تاجایی که میتونید آن را برآورده کنید</span>
+      <p class="pull-right">
+        <a class="btn btn-success" id="btnFulfill" href="#">برآورده کردن سفارش</a>
+      </p>
+    </div>
+
+    <div class="alert alert-warning collapse" role="alert" id="newOrder">
+      <p style="margin-bottom: 5px;">اطلاعیه</p>
+      <span class="glyphicon glyphicon-shopping-cart" aria-hidden="true"></span>
+      <span id="orderText">.زمان سفارش از توزیع کننده است. برای ثبت سفارش فرم سفارش آنها را در زیر پر کنید</span>
+    </div>
+
+    <div class="panel panel-default" id="lobby">
+      <div class="panel-heading">اعضای تیم</div>
+
+      <table class="table" id="grouptable">
+        <thead>
+          <tr>
+            <th style="text-align: right;">#</th>
+            <th style="text-align: right;">نام کاربری</th>
+            <th style="text-align: right;">نقش</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>انتظار...</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>انتظار...</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>انتظار...</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>انتظار...</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="row" id="board">
+      <div class="col-sm-3">
+        <div class="panel panel-success">
+          <div class="panel-heading">
+            <h3 class="panel-title" id="downstreamRole">مشتری</h3>
+          </div>
+          <div class="panel-body">
+            <div class="row">
+              <div class="col-xs-6">
+                <p><strong>سفارش 2 دوره قبل:</strong></p>
+                <p class="unit-amount" id="downstreamOrders"><span id="dsOrdrAmt">0</span><small>واحد</small></p>
+              </div>
+              <div class="col-xs-6">
+                <p><strong>ارسال شده:</strong></p>
+                <p class="unit-amount" id="downstreamShipments"><span id="dsShpAmt">0</span><small>واحد</small></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-6">
+        <div class="panel panel-primary">
+          <div class="panel-heading">
+            <h3 class="panel-title" id="userRole">خرده فروش (شما)</h3>
+          </div>
+          <div class="panel-body">
+            <div class="row">
+              <div class="col-xs-4">
+                <p><strong>هزینه:</strong></p>
+                <p class="unit-amount-sm" id="curCost">ريال<span id="cstAmt">0.00</span></p>
+              </div>
+              <div class="col-xs-4">
+                <p><strong>موجودی:</strong></p>
+                <p class="unit-amount" id="curInventory"><span id="inventoryAmt">0</span><small>واحد</small></p>
+              </div>
+              <div class="col-xs-4">
+                <p><strong>کمبود:</strong></p>
+                <p class="unit-amount" id="curBacklog"><span id="bklgAmt">0</span><small>واحد</small></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-3">
+        <div class="panel panel-warning">
+          <div class="panel-heading">
+            <h3 class="panel-title" id="upstreamRole">عمده فروش</h3>
+          </div>
+          <div class="panel-body">
+            <p><strong>محموله در راه:</strong></p>
+            <p class="unit-amount" id="upstreamShipments"><span id="usShpAmt">0</span><small>واحد</small></p>
+            <form data-toggle="validator" role="form">
+              <div class="form-group">
+                <div class="input-group">
+                  <input type="text" pattern="^[0-9]+$" data-error="Invalid unit quanity" class="form-control" id="formOrderAmount" placeholder="تعداد"
+                    required>
+                  <span class="input-group-btn">
+                  <button class="btn btn-warning" type="submit" id="btnOrder">سفارش</button>
+                </span>
+                </div>
+                <div class="help-block with-errors"></div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
